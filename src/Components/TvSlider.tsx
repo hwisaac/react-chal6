@@ -1,7 +1,16 @@
 import { useQuery } from "react-query";
 import styled from "styled-components";
 import { motion, AnimatePresence, useViewportScroll } from "framer-motion";
-import { getMovies, IGetMoviesResult, IMovie, MovieSort } from "../api";
+import {
+  getMovies,
+  getTv,
+  IGetTvResult,
+  ITv,
+  IGetMoviesResult,
+  IMovie,
+  MovieSort,
+  TvSort,
+} from "../api";
 import { makeImagePath } from "../utils";
 import { useState } from "react";
 import { useNavigate, useMatch, useParams, Outlet } from "react-router-dom";
@@ -91,8 +100,9 @@ const Overlay = styled(motion.div)`
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
   opacity: 0;
+  /* display: none; */
 `;
-const BigMovie = styled(motion.div)`
+const BigTv = styled(motion.div)`
   z-index: 100;
   position: fixed;
   width: 40vw;
@@ -105,12 +115,14 @@ const BigMovie = styled(motion.div)`
   border-radius: 15px;
   overflow: hidden;
   background-color: ${(props) => props.theme.black.lighter};
+  /* display: none; */
 `;
 const BigCover = styled.div`
   width: 100%;
-  background-size: cover;
+  background-size: contain;
   background-position: center center;
   height: 400px;
+  /* display: none; */
 `;
 const BigTitle = styled.h3`
   color: ${(props) => props.theme.white.lighter};
@@ -163,16 +175,17 @@ const infoVariants = {
     },
   },
 };
-interface ISliderProps {
-  movieSort: MovieSort;
+interface ITvSliderProps {
+  tvSort: TvSort;
   slideTitle: string;
+  page: number;
 }
 
 const offset = 6;
 
-const Slider = ({ movieSort, slideTitle }: ISliderProps) => {
+const Slider = ({ tvSort, slideTitle, page = 1 }: ITvSliderProps) => {
   const ls = slideTitle.length;
-  const [moviesData, setMoviesData] = useRecoilState(moviesAtom);
+  const [tvData, setTvData] = useRecoilState(moviesAtom);
   const navigate = useNavigate();
   const { scrollY } = useViewportScroll();
   const [index, setIndex] = useState(0);
@@ -180,9 +193,9 @@ const Slider = ({ movieSort, slideTitle }: ISliderProps) => {
   const [leaving, setLeaving] = useState(false);
   const toggleLeaving = () => setLeaving((prev) => !prev);
   const [openModal, setOpenModal] = useState(false);
-  const [movieDetail, setMovieDetail] = useState<IMovie>();
-  const { data, isLoading } = useQuery(["movies", movieSort], () =>
-    getMovies(movieSort)
+  const [tvDetail, setTvDetail] = useState<ITv>();
+  const { data, isLoading } = useQuery(["tv", tvSort], () =>
+    getTv(tvSort, page)
   );
 
   const increaseIndex = () => {
@@ -190,8 +203,8 @@ const Slider = ({ movieSort, slideTitle }: ISliderProps) => {
       if (leaving) return;
       toggleLeaving();
       setDirection(1);
-      const totalMovies = data.results.length - 1;
-      const maxIndex = Math.floor(totalMovies / offset) - 1;
+      const totalTvs = data.results.length - 1;
+      const maxIndex = Math.floor(totalTvs / offset) - 1;
       setIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
     }
   };
@@ -200,15 +213,16 @@ const Slider = ({ movieSort, slideTitle }: ISliderProps) => {
       if (leaving) return;
       toggleLeaving();
       setDirection(-1);
-      const totalMovies = data.results.length - 1;
-      const maxIndex = Math.floor(totalMovies / offset) - 1;
+      const totalTvs = data.results.length - 1;
+      const maxIndex = Math.floor(totalTvs / offset) - 1;
       setIndex((prev) => (prev === 0 ? maxIndex : prev - 1));
     }
   };
-  const onBoxClicked = (movie: IMovie) => {
-    navigate(`/movies/${movie.id}`);
+  const onBoxClicked = (tv: ITv) => {
+    navigate(`/tv/${tv.id}`);
     setOpenModal(true);
-    setMovieDetail(movie);
+    setTvDetail(tv);
+    console.log(tv);
   };
 
   return (
@@ -230,18 +244,18 @@ const Slider = ({ movieSort, slideTitle }: ISliderProps) => {
             {data?.results
               .slice(1)
               .slice(offset * index, offset * index + offset)
-              .map((movie: any) => (
+              .map((tv: ITv) => (
                 <Box
-                  layoutId={`${String(movie.id)}${ls}`}
-                  key={`${movie.id}${ls}`}
+                  layoutId={`${String(tv.id)}${ls}`}
+                  key={`${tv.id}${ls}`}
                   whileHover='hover'
                   initial='normal'
                   variants={boxVariants}
-                  onClick={() => onBoxClicked(movie)}
+                  onClick={() => onBoxClicked(tv)}
                   transition={{ type: "tween" }}
-                  bgphoto={makeImagePath(movie.backdrop_path, "w500")}>
+                  bgphoto={makeImagePath(tv.poster_path, "w500")}>
                   <Info variants={infoVariants}>
-                    <h4>{movie.title ?? movie.name}</h4>
+                    <h4>{tv.name ?? tv.title}</h4>
                   </Info>
                 </Box>
               ))}
@@ -255,29 +269,29 @@ const Slider = ({ movieSort, slideTitle }: ISliderProps) => {
           <>
             <Overlay
               onClick={() => {
-                navigate("/");
+                navigate("/tv");
                 setOpenModal(false);
               }}
               exit={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             />
-            <BigMovie layoutId={`${Number(movieDetail?.id)}${ls}`}>
-              {movieDetail && (
+            <BigTv layoutId={`${Number(tvDetail?.id)}${ls}`}>
+              {tvDetail && (
                 <>
                   <BigCover
                     style={{
                       backgroundImage: `linear-gradient(to top, black, transparent), url(${makeImagePath(
-                        movieDetail.backdrop_path,
+                        tvDetail?.backdrop_path,
                         "w500"
                       )})`,
                     }}
                   />
 
-                  <BigTitle>{movieDetail.title}</BigTitle>
-                  <BigOverview>{movieDetail.overview}</BigOverview>
+                  <BigTitle>{tvDetail.title}</BigTitle>
+                  <BigOverview>{tvDetail.overview}</BigOverview>
                 </>
               )}
-            </BigMovie>
+            </BigTv>
           </>
         )}
       </AnimatePresence>

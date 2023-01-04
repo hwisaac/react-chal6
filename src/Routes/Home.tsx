@@ -41,52 +41,24 @@ const Overview = styled.p`
   width: 50%;
 `;
 
-const offset = 6;
-
 function Home() {
-  const navigate = useNavigate();
-  const bigMovieMatch = useMatch("/movies/:movieId");
-  const { movieId } = useParams();
-  const { scrollY } = useViewportScroll();
-  const { data, isLoading } = useQuery<IGetMoviesResult>(
-    ["movies", "nowPlaying"],
-    () => getMovies()
+  const { data, isLoading } = useQuery(["movies", "nowPlaying"], () =>
+    getMovies("now_playing")
   );
 
-  const [index, setIndex] = useState(0);
-  const [leaving, setLeaving] = useState(false);
-  const incraseIndex = () => {
-    if (data) {
-      if (leaving) return;
-      toggleLeaving();
-      const totalMovies = data.results.length - 1;
-      const maxIndex = Math.floor(totalMovies / offset) - 1;
-      setIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
-    }
-  };
-  const toggleLeaving = () => setLeaving((prev) => !prev);
-  const onBoxClicked = (movieId: number) => {
-    navigate(`/movies/${movieId}`);
-  };
-  const onOverlayClick = () => navigate("/");
-  const clickedMovie =
-    bigMovieMatch &&
-    data?.results.find((movie) => movie.id === Number(movieId));
   return (
     <Wrapper>
       {isLoading ? (
         <Loader>Loading...</Loader>
       ) : (
         <>
-          <Banner
-            onClick={incraseIndex}
-            bgphoto={makeImagePath(data?.results[0].backdrop_path || "")}>
+          <Banner bgphoto={makeImagePath(data?.results[0].backdrop_path || "")}>
             <Title>{data?.results[0].title}</Title>
             <Overview>{data?.results[0].overview}</Overview>
           </Banner>
-          <Slider movieSort={"now_playing"} slideTitle={"NOW PLAYING"} />
-          <Slider movieSort={"upcoming"} slideTitle={"UPCOMING"} />
-          <Slider movieSort={"top_rated"} slideTitle={"TOP RATED"} />
+          <Slider movieSort={"now_playing"} slideTitle={"Latest movies"} />
+          <Slider movieSort={"upcoming"} slideTitle={"Upcoming"} />
+          <Slider movieSort={"top_rated"} slideTitle={"Top rated"} />
         </>
       )}
     </Wrapper>

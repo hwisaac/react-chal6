@@ -1,7 +1,7 @@
 import { useQuery } from "react-query";
 import styled from "styled-components";
 import { motion, AnimatePresence, useViewportScroll } from "framer-motion";
-import { getMovies, IGetMoviesResult, IMovie, MovieSort } from "../api";
+import { getMovies, getTv, IGetTvResult, IGetMoviesResult } from "../api";
 import { makeImagePath } from "../utils";
 import { useState } from "react";
 import { useNavigate, useMatch, useParams, Outlet } from "react-router-dom";
@@ -91,8 +91,9 @@ const Overlay = styled(motion.div)`
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
   opacity: 0;
+  /* display: none; */
 `;
-const BigMovie = styled(motion.div)`
+const BigModal = styled(motion.div)`
   z-index: 100;
   position: fixed;
   width: 40vw;
@@ -105,12 +106,14 @@ const BigMovie = styled(motion.div)`
   border-radius: 15px;
   overflow: hidden;
   background-color: ${(props) => props.theme.black.lighter};
+  /* display: none; */
 `;
 const BigCover = styled.div`
   width: 100%;
-  background-size: cover;
+  background-size: contain;
   background-position: center center;
   height: 400px;
+  /* display: none; */
 `;
 const BigTitle = styled.h3`
   color: ${(props) => props.theme.white.lighter};
@@ -163,52 +166,65 @@ const infoVariants = {
     },
   },
 };
-interface ISliderProps {
-  movieSort: MovieSort;
+
+interface IItem {
+  id: number;
+  backdrop_path: string;
+  poster_path: string;
+  title: string; // movie
+  overview: string;
+  video: boolean;
+  vote_average: number;
+  release_data: string;
+  original_language: string;
+  release_date: string;
+  adult: boolean;
+  name: string; // tv
+}
+interface IMyData {
+  results: IItem[];
+}
+interface IMySliderProps {
+  myData: IMyData;
   slideTitle: string;
+  page: number;
 }
 
 const offset = 6;
 
-const Slider = ({ movieSort, slideTitle }: ISliderProps) => {
+const Slider = ({ myData, slideTitle, page = 1 }: IMySliderProps) => {
   const ls = slideTitle.length;
-  const [moviesData, setMoviesData] = useRecoilState(moviesAtom);
   const navigate = useNavigate();
-  const { scrollY } = useViewportScroll();
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
   const [leaving, setLeaving] = useState(false);
   const toggleLeaving = () => setLeaving((prev) => !prev);
   const [openModal, setOpenModal] = useState(false);
-  const [movieDetail, setMovieDetail] = useState<IMovie>();
-  const { data, isLoading } = useQuery(["movies", movieSort], () =>
-    getMovies(movieSort)
-  );
+  const [itemDetail, setItemDetail] = useState<IItem>();
 
   const increaseIndex = () => {
-    if (data) {
-      if (leaving) return;
-      toggleLeaving();
-      setDirection(1);
-      const totalMovies = data.results.length - 1;
-      const maxIndex = Math.floor(totalMovies / offset) - 1;
-      setIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
-    }
+    if (leaving) return;
+    toggleLeaving();
+    setDirection(1);
+    const totalTvs = myData.results.length - 1;
+    const maxIndex = Math.floor(totalTvs / offset) - 1;
+    setIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
   };
   const decreaseIndex = () => {
-    if (data) {
+    if (myData) {
       if (leaving) return;
       toggleLeaving();
       setDirection(-1);
-      const totalMovies = data.results.length - 1;
-      const maxIndex = Math.floor(totalMovies / offset) - 1;
+      const totalTvs = myData.results.length - 1;
+      const maxIndex = Math.floor(totalTvs / offset) - 1;
       setIndex((prev) => (prev === 0 ? maxIndex : prev - 1));
     }
   };
-  const onBoxClicked = (movie: IMovie) => {
-    navigate(`/movies/${movie.id}`);
+  const onBoxClicked = (item: IItem) => {
+    // navigate(item.id)
     setOpenModal(true);
-    setMovieDetail(movie);
+    setItemDetail(item);
+    console.log(item);
   };
 
   return (
@@ -227,21 +243,21 @@ const Slider = ({ movieSort, slideTitle }: ISliderProps) => {
             exit='exit'
             transition={{ type: "tween", duration: 1 }}
             key={`${index}-${slideTitle}`}>
-            {data?.results
+            {myData?.results
               .slice(1)
               .slice(offset * index, offset * index + offset)
-              .map((movie: any) => (
+              .map((item: IItem) => (
                 <Box
-                  layoutId={`${String(movie.id)}${ls}`}
-                  key={`${movie.id}${ls}`}
+                  layoutId={`${String(item.id)}${ls}`}
+                  key={`${item.id}${ls}`}
                   whileHover='hover'
                   initial='normal'
                   variants={boxVariants}
-                  onClick={() => onBoxClicked(movie)}
+                  onClick={() => onBoxClicked(item)}
                   transition={{ type: "tween" }}
-                  bgphoto={makeImagePath(movie.backdrop_path, "w500")}>
+                  bgphoto={makeImagePath(item.poster_path, "w500")}>
                   <Info variants={infoVariants}>
-                    <h4>{movie.title ?? movie.name}</h4>
+                    <h4>{item.name ?? item.title}</h4>
                   </Info>
                 </Box>
               ))}
@@ -255,29 +271,29 @@ const Slider = ({ movieSort, slideTitle }: ISliderProps) => {
           <>
             <Overlay
               onClick={() => {
-                navigate("/");
+                // navigate(-1)
                 setOpenModal(false);
               }}
               exit={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             />
-            <BigMovie layoutId={`${Number(movieDetail?.id)}${ls}`}>
-              {movieDetail && (
+            <BigModal layoutId={`${Number(itemDetail?.id)}${ls}`}>
+              {itemDetail && (
                 <>
                   <BigCover
                     style={{
                       backgroundImage: `linear-gradient(to top, black, transparent), url(${makeImagePath(
-                        movieDetail.backdrop_path,
+                        itemDetail?.backdrop_path,
                         "w500"
                       )})`,
                     }}
                   />
 
-                  <BigTitle>{movieDetail.title}</BigTitle>
-                  <BigOverview>{movieDetail.overview}</BigOverview>
+                  <BigTitle>{itemDetail.title ?? itemDetail.name}</BigTitle>
+                  <BigOverview>{itemDetail.overview}</BigOverview>
                 </>
               )}
-            </BigMovie>
+            </BigModal>
           </>
         )}
       </AnimatePresence>
