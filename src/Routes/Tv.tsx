@@ -1,4 +1,4 @@
-import { useQuery } from "react-query";
+import { useQuery, useInfiniteQuery } from "react-query";
 import styled from "styled-components";
 import { motion, AnimatePresence, useViewportScroll } from "framer-motion";
 import { getMovies, IGetMoviesResult } from "../api";
@@ -33,6 +33,7 @@ function Tv() {
       "https://api.themoviedb.org/3/tv/latest?api_key=10923b261ba94d897ac6b81148314a3f"
     ).then((res) => res.json())
   );
+
   return (
     <Wrapper>
       <TvSlider tvSort={"on_the_air"} slideTitle={"Latest shows!"} page={1} />

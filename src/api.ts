@@ -72,13 +72,18 @@ export interface IGetSearchItems {
   total_results: number;
 }
 
-export async function searchData(query: string) {
-  const movieJson = await fetch(
-    `${BASE_PATH}/search/movie?api_key=${API_KEY}&query=${query}`
+export async function searchData(
+  category: string,
+  keyword: string,
+  page: number
+) {
+  const json = await fetch(
+    `${BASE_PATH}/search/${category}?api_key=${API_KEY}&query=${keyword}&page=${page}`
   ).then((response) => response.json());
-  const tvJson = await fetch(
-    `${BASE_PATH}/search/tv?api_key=${API_KEY}&query=${query}`
-  ).then((response) => response.json());
+  // const tvJson = await fetch(
+  //   `${BASE_PATH}/search/${category}?api_key=${API_KEY}&query=${query}`
+  // ).then((response) => response.json());
 
-  return { movieJson, tvJson };
+  // return { movieJson, tvJson };
+  return json;
 }

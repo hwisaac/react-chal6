@@ -1,24 +1,9 @@
-import { useQuery } from "react-query";
+import { useInfiniteQuery } from "react-query";
 import styled from "styled-components";
-import { motion, AnimatePresence, useViewportScroll } from "framer-motion";
-import {
-  getMovies,
-  IGetMoviesResult,
-  searchData,
-  IGetSearchItems,
-  ISearchedItem,
-} from "../api";
-import { makeImagePath } from "../utils";
-import { useState, useEffect } from "react";
-import {
-  useNavigate,
-  useMatch,
-  useParams,
-  Outlet,
-  useLocation,
-  useSearchParams,
-} from "react-router-dom";
-import MySlider from "../Components/MySlider";
+import { searchData } from "../api";
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import SearchedResults from "../Components/SearchedResults";
 
 const Wrapper = styled.div`
   padding-top: 70px;
@@ -29,6 +14,11 @@ const Wrapper = styled.div`
   background-color: #2d2d2d;
 `;
 const Tab = styled.div``;
+const TabTitle = styled.h1`
+  /* justify-content: center; */
+  text-align: center;
+  margin: 20px;
+`;
 const SubNav = styled.ul`
   display: flex;
   width: 100%;
@@ -49,35 +39,74 @@ const SubNavItem = styled.li<{ clicked: boolean }>`
     return props.clicked ? "3px solid white" : "3px solid orange";
   }};
 `;
+const MoreButton = styled.div<{ disable: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ${(props) => (props.disable ? null : "pointer")};
+  font-weight: 700;
+  margin: 0 auto;
+  color: white;
+  background-color: ${(props) => (props.disable ? "gray" : "orange")};
+  border-radius: 15px;
+  width: auto;
+  height: 50px;
+  padding: 10px;
+`;
 
 function Search() {
   let [searchParams, setSearchParams] = useSearchParams();
-  const keyword = searchParams.get("keyword");
+  const keyword = searchParams.get("keyword") as any;
   const [tabToggle, setTabToggle] = useState(true);
   const [movies, setMovies] = useState<any>();
   const [tvs, setTvs] = useState<any>();
-  // console.log(searchParams.getAll());
-  // console.log(searchParams.toString());
-  // console.log(searchParams.values());
-  const { data, isLoading, refetch } = useQuery<any>(
-    ["search"],
-    () => searchData("avengers"),
+
+  const {
+    data: movieInfiniteData,
+    fetchNextPage: movieFetchNextPage,
+    hasNextPage: movieHasNextPage,
+    isFetchingNextPage: movieIsFetchingNextPage,
+  } = useInfiniteQuery(
+    ["searchMovie", keyword],
+    ({ pageParam = 1 }) => searchData("movie", keyword, pageParam),
     {
-      enabled: false,
-      onSuccess: () => {
-        console.log("data.movieJson.results: ", data?.movieJson.results);
-        // console.log(movieJson.results);
-        if (data) setMovies(data.movieJson.results);
-        if (data) setTvs(data.tvJson.results);
+      getNextPageParam: (lastPage, pages) => {
+        const { page, total_pages } = lastPage;
+        return page < total_pages ? page + 1 : undefined;
+      },
+
+      onSuccess: (movieInfiniteData) => {
+        let temp: any = [];
+        for (let x of movieInfiniteData.pages) {
+          temp = [...temp, ...x.results];
+        }
+        setMovies(temp);
       },
     }
   );
-
-  useEffect(() => {
-    // keyword = searchParams.get("keyword");
-    refetch().then((res) => console.log("refetched"));
-  }, []);
-
+  const {
+    data: tvInfiniteData,
+    fetchNextPage: tvFetchNextPage,
+    hasNextPage: tvHasNextPage,
+    isFetchingNextPage: tvIsFetchingNextPage,
+  } = useInfiniteQuery(
+    ["searchTv", keyword],
+    ({ pageParam = 1 }) => searchData("tv", keyword, pageParam),
+    {
+      getNextPageParam: (lastPage, pages) => {
+        const { page, total_pages } = lastPage;
+        return page < total_pages ? page + 1 : undefined;
+      },
+      onSuccess: (tvInfiniteData) => {
+        let temp: any = [];
+        for (let x of tvInfiniteData.pages) {
+          temp = [...temp, ...x.results];
+        }
+        setTvs(temp);
+      },
+    }
+  );
+  console.log(movieInfiniteData?.pages);
   return (
     <Wrapper>
       <SubNav>
@@ -90,17 +119,32 @@ function Search() {
       </SubNav>
       {tabToggle ? (
         <Tab>
-          무비 SEARCH: {keyword}
-          {movies?.map((movie: any) => (
-            <div>{movie.title}</div>
-          ))}
+          <TabTitle>Movie SEARCH: {keyword}</TabTitle>
+
+          {movies && <SearchedResults results={movies} />}
+          <MoreButton
+            onClick={() => movieFetchNextPage()}
+            disable={!movieHasNextPage || movieIsFetchingNextPage}>
+            {movieIsFetchingNextPage
+              ? "Loading more..."
+              : movieHasNextPage
+              ? "Load More"
+              : "Nothing more to load"}
+          </MoreButton>
         </Tab>
       ) : (
         <Tab>
-          SEARCH: {keyword}
-          {tvs?.map((tv: any) => (
-            <div>{tv.name}</div>
-          ))}
+          <TabTitle>TV SEARCH: {keyword}</TabTitle>
+          {tvs && <SearchedResults results={tvs} />}
+          <MoreButton
+            onClick={() => tvFetchNextPage()}
+            disable={!tvHasNextPage || tvIsFetchingNextPage}>
+            {tvIsFetchingNextPage
+              ? "Loading more..."
+              : tvHasNextPage
+              ? "Load More"
+              : "Nothing more to load"}
+          </MoreButton>
         </Tab>
       )}
     </Wrapper>
