@@ -4,6 +4,8 @@
 
 [Demo](https://hwisaac.github.io/react-chal6/)
 
+![](readMeImages/2023-03-03-20-17-27.png)
+
 ## 사용
 
 - `react` 사용자 인터페이스 구축
