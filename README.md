@@ -1,12 +1,28 @@
 ## 설명
 
-`https://api.themoviedb.org/` Rest API 를 이용한 넷플릭스 클론코딩
+> `framer-motion`을 활용하여 `https://api.themoviedb.org/` REST API 를 이용한 넷플릭스 클론코딩
 
 [Demo](https://hwisaac.github.io/react-chal6/)
 
 ![](readMeImages/2023-03-03-20-17-27.png)
 
+## 구현
+
+영화 정보 모달창 
+
+![](readMeImages/movie-modal.gif)
+
+검색하기 + 무한쿼리
+
+![](readMeImages/search-infiniteQueries.gif)
+
+슬라이드 구현
+
+![](readMeImages/slide.gif)
+
+
 ## 사용
+
 
 - `react` 사용자 인터페이스 구축
 - `framer-motion` 애니메이션
