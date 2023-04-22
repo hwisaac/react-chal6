@@ -1,6 +1,6 @@
 ## 설명
 
-> `framer-motion`을 활용하여 `https://api.themoviedb.org/` REST API 를 이용한 넷플릭스 클론코딩
+> `https://api.themoviedb.org/` REST API 를 이용한 넷플릭스 클론코딩
 
 [Demo](https://hwisaac.github.io/react-chal6/)
 
